@@ -9,7 +9,9 @@ that re-weights agent influence based on measured accuracy.
 ## Quick start
 ```bash
 pip install -r requirements.txt
-cp .env.example .env        # add your OPENAI_API_KEY (or keep MOCK_MODE=true)
+cp .env.example .env        # paste your GEMINI_API_KEY (aistudio.google.com/apikey)
+# optional backup brain: OPENROUTER_API_KEY (free, no card: openrouter.ai/keys)
+# LLM_PROVIDER=auto  -> Gemini -> OpenRouter free -> mock (never crashes a demo)
 python -m data.fetch_market # pulls real prices + carbon-proxy data
 python -m data.build_rag    # after dropping ESG PDFs into data_cache/pdfs/
 python -m orchestrator.graph  # CLI smoke test
