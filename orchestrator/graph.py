@@ -75,10 +75,16 @@ def _rag_evidence(ticker: str, k: int = 5) -> str:
 
 def _market_stats() -> dict:
     path = os.path.join(config.DATA_DIR, "price_stats.json")
+    stats = {}
     if os.path.exists(path):
         with open(path) as f:
-            return json.load(f)
-    return {}
+            stats = json.load(f)
+    try:
+        from data.carbon_forecast import carbon_summary
+        stats["_carbon_forecast"] = carbon_summary()
+    except Exception:
+        pass
+    return stats
 
 
 # ------------------------------------------------ nodes
