@@ -12,7 +12,8 @@ An investment research studio that makes evidence gaps, portfolio constraints, a
 
 </div>
 
-![Actual Streamlit boardroom with a fictional investment review](docs/screenshots/boardroom-desktop.png)
+<img width="957" height="437" alt="image" src="https://github.com/user-attachments/assets/7a4db198-3f77-4255-aec0-e579e8e7241b" />
+
 
 > Research prototype. No trades or credit decisions. Fictional examples and synthetic benchmarks are labeled. Historical price signals are estimates, not investment advice or demonstrated future returns.
 
@@ -92,7 +93,8 @@ See [the demo script](docs/DEMO_SCRIPT.md) for a rehearsed four-minute run.
 
 ## Decision economics: C13
 
-![Actual C13 decision-economics interface](docs/screenshots/c13-results-desktop.png)
+<img width="959" height="434" alt="image" src="https://github.com/user-attachments/assets/aaf011a2-ea2d-4b92-980b-f5a8151f75ac" />
+
 
 The illustrative default scenario charges **$100 for every audit**, including
 true positives, and **$10,000 for each missed positive**. A successful audit is
