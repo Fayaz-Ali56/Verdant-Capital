@@ -4,11 +4,9 @@ from typing import TypedDict, List, Optional
 from langgraph.graph import StateGraph, END
 
 import config
-from agents.prompts import (ESG_VERIFIER_PROMPT, MARKET_ANALYST_PROMPT,
-                            SYNTHESIS_PROMPT, REBUTTAL_PROMPT)
+from agents.prompts import ESG_VERIFIER_PROMPT, MARKET_ANALYST_PROMPT, SYNTHESIS_PROMPT
 from agents.llm import chat_json
-from orchestrator.allocator import allocate, is_dirty
-from orchestrator.guard import sanitize_payload, guard_memo
+from challenge.c04_oob_guard import validate_market_snapshot as guard_validate
 
 
 class AgentVote(TypedDict):
@@ -27,13 +25,6 @@ class GraphState(TypedDict):
     critiques: List[str]
     debate_rounds: int
     final_memo: Optional[dict]
-    # every key a node returns MUST be declared here, or LangGraph silently drops it
-    conflicts: List[dict]
-    disagreement: int
-    optimizer_weights: dict
-    feedback_weights: dict
-    guard_report: dict
-    sanitize_issues: List[str]
 
 
 # ------------------------------------------------ mock data (offline / fallback)
@@ -60,12 +51,6 @@ def _mock_payload(agent_tag: str, ticker: str = "") -> dict:
         return {"ticker": ticker, "market_view": prof["view"], "carbon_outlook": "rising",
                 "reasoning": f"[MOCK] carbon proxy up; {ticker} sensitivity per fetched stats.",
                 "confidence": prof["conf"], "evidence": [f"[MOCK] {config.CARBON_TICKER} trend: +2.1% / 30d"]}
-    if agent_tag == "rebuttal":
-        keep = {"bullish": "neutral", "bearish": "neutral", "neutral": "neutral"}
-        return {"ticker": ticker, "revised_view": keep[prof["view"]],
-                "revised_confidence": round(prof["conf"] * 0.6, 2),
-                "concession": f"[MOCK] Accepts the ESG challenge on {ticker}: transition/reputational "
-                              f"risk is material, so the directional call is downgraded to neutral."}
     clean = [t for t, p in _MOCK_PROFILES.items() if p["greenwash_risk"] <= 60]
     dirty = [t for t, p in _MOCK_PROFILES.items() if p["greenwash_risk"] > 60]
     port = ([{"ticker": t, "weight": round(0.9 / len(clean), 3),
@@ -104,64 +89,63 @@ def _market_stats() -> dict:
 
 
 # ------------------------------------------------ nodes
-def _upsert(votes, agent, ticker, payload):
-    votes = [v for v in votes if not (v["agent"] == agent and v["ticker"] == ticker)]
-    votes.append(AgentVote(agent=agent, ticker=ticker,
-                           confidence=payload.get("confidence", 0.5), payload=payload))
-    return votes
+def run_guard(state: GraphState) -> dict:
+    """C04: screen incoming data before ANY agent reasons on it."""
+    payload = dict(_market_stats())
+    result = guard_validate(payload)
+    return {"guard": result}
+
+
+def route_guard(state: GraphState) -> str:
+    return "safe_mode" if state.get("guard", {}).get("safe_mode") else "esg_verifier"
+
+
+def run_safe_mode(state: GraphState) -> dict:
+    """Corrupt data in -> no confident predictions out. Honest refusal is a feature."""
+    reasons = state.get("guard", {}).get("rejections", []) + state.get("guard", {}).get("flags", [])
+    return {"final_memo": {
+        "portfolio": [],
+        "expected_esg_score": None,
+        "disagreements_resolved": [],
+        "residual_risks": ["DATA QUALITY GUARD TRIGGERED — analysis suspended"] +
+                         [r["rule"] for r in reasons],
+        "overall_confidence": 0.05,
+        "data_quality_flags": reasons,
+    }}
 
 
 def run_esg_verifier(state: GraphState) -> dict:
-    votes, issues = list(state.get("votes", [])), list(state.get("sanitize_issues", []))
+    votes = [v for v in state.get("votes", []) if v["agent"] != "esg_verifier"]
     for ticker in state["candidates"]:
         evidence = _rag_evidence(ticker)
         msg = f"Company: {ticker}.\n\nRetrieved evidence:\n{evidence or '(no RAG store built — assess as unverified)'}"
-        raw = chat_json(ESG_VERIFIER_PROMPT, msg, agent_tag="esg", ticker=ticker)
-        payload, iss = sanitize_payload(raw, "esg", ticker)
-        issues += iss
-        votes = _upsert(votes, "esg_verifier", ticker, payload)
-    return {"votes": votes, "sanitize_issues": issues}
+        payload = chat_json(ESG_VERIFIER_PROMPT, msg, agent_tag="esg", ticker=ticker)
+        votes.append(AgentVote(agent="esg_verifier", ticker=ticker,
+                               confidence=payload.get("confidence", 0.5), payload=payload))
+    return {"votes": votes}
 
 
 def run_market_analyst(state: GraphState) -> dict:
-    votes, issues = list(state.get("votes", [])), list(state.get("sanitize_issues", []))
+    votes = [v for v in state.get("votes", []) if v["agent"] != "market_analyst"]
     stats = _market_stats()
-    carbon = json.dumps(stats.get("_carbon_forecast", {}))
     for ticker in state["candidates"]:
-        msg = (f"Company: {ticker}.\n\nPrice statistics: {json.dumps(stats.get(ticker, {}))}\n"
-               f"Carbon-market forecast: {carbon}")
-        raw = chat_json(MARKET_ANALYST_PROMPT, msg, agent_tag="market", ticker=ticker)
-        payload, iss = sanitize_payload(raw, "market", ticker)
-        issues += iss
-        votes = _upsert(votes, "market_analyst", ticker, payload)
-    return {"votes": votes, "sanitize_issues": issues}
-
-
-def find_conflicts(votes: List[AgentVote]) -> List[dict]:
-    """A real disagreement = the two agents point in opposite directions on a ticker.
-    (Comparing the two agents' raw confidence numbers is apples-to-oranges, so we don't.)"""
-    esg = {v["ticker"]: v["payload"] for v in votes if v["agent"] == "esg_verifier"}
-    mkt = {v["ticker"]: v["payload"] for v in votes if v["agent"] == "market_analyst"}
-    out = []
-    for t, e in esg.items():
-        m = mkt.get(t)
-        if not m:
-            continue
-        view = m.get("market_view")
-        if is_dirty(e) and view == "bullish":
-            out.append({"ticker": t, "kind": "bullish_on_greenwasher"})
-        elif e.get("verdict") == "credible" and view == "bearish":
-            out.append({"ticker": t, "kind": "bearish_on_credible"})
-    return out
+        msg = f"Company: {ticker}.\n\nPrice statistics: {json.dumps(stats.get(ticker, {}))}"
+        payload = chat_json(MARKET_ANALYST_PROMPT, msg, agent_tag="market", ticker=ticker)
+        votes.append(AgentVote(agent="market_analyst", ticker=ticker,
+                               confidence=payload.get("confidence", 0.5), payload=payload))
+    return {"votes": votes}
 
 
 def check_consensus(state: GraphState) -> dict:
-    conflicts = find_conflicts(state["votes"])
-    return {"conflicts": conflicts, "disagreement": len(conflicts)}
+    by_ticker = {}
+    for v in state["votes"]:
+        by_ticker.setdefault(v["ticker"], []).append(v["confidence"])
+    spreads = {t: max(cs) - min(cs) for t, cs in by_ticker.items() if len(cs) > 1}
+    return {"disagreement": max(spreads.values()) if spreads else 0.0}
 
 
 def route_consensus(state: GraphState) -> str:
-    if state.get("disagreement", 0) == 0:
+    if state.get("disagreement", 0) <= config.DISAGREEMENT_THRESHOLD:
         return "optimize"
     if state.get("debate_rounds", 0) >= config.MAX_DEBATE_ROUNDS:
         return "optimize"
@@ -169,58 +153,45 @@ def route_consensus(state: GraphState) -> str:
 
 
 def run_critique_round(state: GraphState) -> dict:
-    """The debate: ESG challenges the Market Analyst on each conflicted ticker; the analyst
-    must hold or revise. The revised vote replaces the old one, so the debate changes the outcome."""
+    """Only genuinely conflicting tickers enter the debate."""
     votes = list(state["votes"])
     critiques = list(state.get("critiques", []))
-    issues = list(state.get("sanitize_issues", []))
-    rnd = state.get("debate_rounds", 0) + 1
-    esg = {v["ticker"]: v["payload"] for v in votes if v["agent"] == "esg_verifier"}
+    esg = {v["ticker"]: v for v in votes if v["agent"] == "esg_verifier"}
     mkt = {v["ticker"]: v for v in votes if v["agent"] == "market_analyst"}
-    for c in state.get("conflicts", []):
-        t = c["ticker"]
-        e, m = esg[t], mkt[t]["payload"]
-        challenge = (f"ESG Verifier on {t}: verdict={e.get('verdict')}, greenwash_risk={e.get('greenwash_risk')}, "
-                     f"red_flags={e.get('red_flags')}, evidence={e.get('evidence')}.")
-        mine = (f"Your current view on {t}: {m.get('market_view')} "
-                f"(confidence {m.get('confidence')}), reasoning: {m.get('reasoning')}")
-        reb = chat_json(REBUTTAL_PROMPT, f"{challenge}\n\n{mine}", agent_tag="rebuttal", ticker=t)
-        new_view = reb.get("revised_view", m.get("market_view")) if isinstance(reb, dict) else m.get("market_view")
-        new_conf = reb.get("revised_confidence", m.get("confidence")) if isinstance(reb, dict) else m.get("confidence")
-        revised, iss = sanitize_payload({**m, "market_view": new_view, "confidence": new_conf}, "market", t)
-        issues += iss
-        votes = _upsert(votes, "market_analyst", t, revised)
-        changed = revised["market_view"] != m.get("market_view")
-        outcome = (f"Market Analyst revised {m.get('market_view')} → {revised['market_view']} "
-                   f"({m.get('confidence', 0):.0%} → {revised['confidence']:.0%})") if changed \
-            else f"Market Analyst held {m.get('market_view')}"
-        why = (reb or {}).get("concession", "") if isinstance(reb, dict) else ""
-        critiques.append(f"[round {rnd}] ⚔️ {t}: ESG={e.get('verdict')} (risk {e.get('greenwash_risk')}) vs "
-                         f"market={m.get('market_view')}. {outcome}. {why}")
-    return {"votes": votes, "critiques": critiques, "debate_rounds": rnd, "sanitize_issues": issues}
+    for ticker in esg:
+        gap = abs(esg[ticker]["confidence"] - mkt[ticker]["confidence"])
+        verdict = esg[ticker]["payload"].get("verdict", "")
+        view = mkt[ticker]["payload"].get("market_view", "")
+        if (gap > config.DISAGREEMENT_THRESHOLD
+                or ("greenwashing" in verdict and view == "bullish")
+                or (verdict == "credible" and view == "bearish")):
+            critiques.append(
+                f"[round {state.get('debate_rounds', 0) + 1}] ⚔️ {ticker}: "
+                f"ESG verdict={verdict} (conf {esg[ticker]['confidence']:.0%}) vs "
+                f"market view={view} (conf {mkt[ticker]['confidence']:.0%})")
+    return {"critiques": critiques,
+            "debate_rounds": state.get("debate_rounds", 0) + 1}
 
 
 def run_optimizer(state: GraphState) -> dict:
-    """Feedback-weighted, volatility-adjusted allocation with hard constraints (see allocator.py)."""
-    try:
-        import data.feedback_store as fb
-        fw = fb.agent_weights()
-    except Exception:
-        fw = {"esg_verifier": 1.0, "market_analyst": 1.0}
-    stats = _market_stats()
-    weights = allocate(state["votes"], state.get("risk_profile", "moderate"), fw, stats)
-    return {"optimizer_weights": weights, "feedback_weights": fw}
+    """Hard constraint: greenwash-risk > 60 assets capped at 10% total. Swap in PyPortfolioOpt later."""
+    esg = {v["ticker"]: v for v in state["votes"] if v["agent"] == "esg_verifier"}
+    clean = [t for t, v in esg.items() if v["payload"].get("greenwash_risk", 0) <= 60]
+    dirty = [t for t, v in esg.items() if v["payload"].get("greenwash_risk", 0) > 60]
+    weights = {}
+    if clean:
+        for t in clean:
+            weights[t] = 0.9 / len(clean)
+    for t in dirty:
+        weights[t] = 0.1 / max(len(dirty), 1)
+    return {"optimizer_weights": weights}
 
 
 def run_synthesis(state: GraphState) -> dict:
     user_msg = (f"Query: {state['query']}. Capital: {state['capital']}. "
                 f"Risk: {state['risk_profile']}. Votes: {json.dumps(state['votes'])}. "
                 f"Critiques: {state.get('critiques')}. Weights: {state.get('optimizer_weights')}.")
-    memo = chat_json(SYNTHESIS_PROMPT, user_msg, agent_tag="cio")
-    esg = {v["ticker"]: v["payload"] for v in state["votes"] if v["agent"] == "esg_verifier"}
-    memo, report = guard_memo(memo, state["optimizer_weights"], esg,
-                              state["candidates"], state.get("risk_profile", "moderate"))
-    return {"final_memo": memo, "guard_report": report}
+    return {"final_memo": chat_json(SYNTHESIS_PROMPT, user_msg, agent_tag="cio")}
 
 
 def build_graph():
@@ -231,30 +202,28 @@ def build_graph():
     g.add_node("critique", run_critique_round)
     g.add_node("optimizer", run_optimizer)
     g.add_node("synthesize", run_synthesis)
-    g.set_entry_point("esg_verifier")
+    g.set_entry_point("guard")
+    g.add_node("guard", run_guard)
+    g.add_node("safe_mode", run_safe_mode)
+    g.add_conditional_edges("guard", route_guard,
+                            {"safe_mode": "safe_mode", "esg_verifier": "esg_verifier"})
+    g.add_edge("safe_mode", END)
     g.add_edge("esg_verifier", "market_analyst")
     g.add_edge("market_analyst", "check_consensus")
     g.add_conditional_edges("check_consensus", route_consensus,
                             {"critique": "critique", "optimize": "optimizer"})
-    g.add_edge("critique", "check_consensus")      # re-check after the debate
+    g.add_edge("critique", "esg_verifier")
     g.add_edge("optimizer", "synthesize")
     g.add_edge("synthesize", END)
     return g.compile()
 
 
-def initial_state(query, candidates, capital, risk_profile):
-    return {"query": query, "candidates": list(candidates), "capital": capital,
-            "risk_profile": risk_profile, "votes": [], "critiques": [], "debate_rounds": 0,
-            "final_memo": None, "conflicts": [], "disagreement": 0, "optimizer_weights": {},
-            "feedback_weights": {}, "guard_report": {}, "sanitize_issues": []}
-
-
 if __name__ == "__main__":
     graph = build_graph()
-    result = graph.invoke(initial_state("Invest sustainably, low carbon exposure, no greenwashing",
-                                        config.DEFAULT_CANDIDATES, 100_000, "moderate"))
-    print("debate rounds:", result["debate_rounds"])
-    for c in result["critiques"]:
-        print(" ", c)
-    print("guard:", result["guard_report"].get("status"), result["guard_report"].get("violations"))
+    result = graph.invoke({
+        "query": "Invest sustainably, low carbon exposure, no greenwashing",
+        "candidates": config.DEFAULT_CANDIDATES,
+        "capital": 100_000, "risk_profile": "moderate",
+        "votes": [], "critiques": [], "debate_rounds": 0, "final_memo": None,
+    })
     print(json.dumps(result["final_memo"], indent=2))

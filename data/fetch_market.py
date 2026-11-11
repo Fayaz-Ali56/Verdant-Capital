@@ -28,13 +28,6 @@ def price_stats(df: pd.DataFrame) -> dict:
 def main():
     tickers = list(config.DEFAULT_CANDIDATES) + [config.CARBON_TICKER]
     df = fetch(tickers)
-    df = df.dropna(axis=1, how="all")
-    if df.empty or len(df) < 60:
-        raise SystemExit("❌ No market data downloaded (check internet / yfinance). "
-                         "Nothing was written, so any earlier good files are untouched.")
-    missing = [t for t in tickers if t not in df.columns]
-    if missing:
-        print("⚠️  No data for:", ", ".join(missing))
     df.to_csv(os.path.join(config.DATA_DIR, "prices.csv"))
     stats = price_stats(df)
     with open(os.path.join(config.DATA_DIR, "price_stats.json"), "w") as f:

@@ -1,7 +1,0 @@
-__pycache__/
-*.pyc
-.env
-rag_db/
-data_cache/llm_cache.json
-data_cache/prices.csv
-.pytest_cache/

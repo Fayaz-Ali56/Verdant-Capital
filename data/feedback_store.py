@@ -41,10 +41,3 @@ def agent_weights() -> dict:
         if n >= 3 and acc is not None:
             base[agent] = round(0.5 + float(acc), 3)
     return base
-
-
-def reset_outcomes():
-    """Clear scored outcomes (used so the simulated backtest is reproducible, not cumulative)."""
-    c = _conn()
-    c.execute("DELETE FROM outcomes")
-    c.commit()

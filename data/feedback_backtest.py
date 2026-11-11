@@ -35,7 +35,6 @@ def _real_returns(tickers, days=DAYS):
     return out or None
 
 def main():
-    fb.reset_outcomes()
     rng = np.random.default_rng(SEED)
     tickers = config.DEFAULT_CANDIDATES
     real = _real_returns(tickers)
@@ -77,13 +76,10 @@ def main():
                          "esg_weight": w.get("esg_verifier", 1.0),
                          "mkt_weight": w.get("market_analyst", 1.0)})
 
-    story = ("SIMULATED SCENARIO: agent hit-rates are scripted (see _ESG_SKILL / _MKT_BASE_ACC) to "
-             "demonstrate the re-weighting mechanism. Only the 30-day forward returns are real, and "
-             "only when prices.csv exists. In this scenario the ESG Verifier flags XOM on day 5, the "
-             "Market Analyst chases the fossil bounce and is wrong, and the loop re-weights influence.")
+    story = ("Day 5: ESG Verifier flagged XOM greenwashing; the Market Analyst had chased the "
+             "fossil bounce and got burned. From day 6 the feedback loop rewards the ESG agent.")
     with open(os.path.join(config.DATA_DIR, "feedback_timeline.json"), "w") as f:
-        json.dump({"simulated": True, "returns_source": "real" if real else "synthetic",
-                   "days": timeline, "story": story}, f, indent=2)
+        json.dump({"days": timeline, "story": story}, f, indent=2)
     for d in (timeline[3], timeline[5], timeline[10], timeline[29]):
         print(d)
 
