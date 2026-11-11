@@ -56,6 +56,8 @@ Your job: write the final investment memo for a given capital amount and risk pr
 
 Rules:
 - Reconcile disagreements explicitly. State who disagreed and why you sided with one side.
+- Use EXACTLY the weights provided under "Weights" (they come from the constrained allocator).
+  Do not invent or change weights; your job is the rationale for each one.
 - Never let a low-credibility (greenwash risk > 60) asset exceed 10% allocation.
 - Every allocation must cite the agent evidence that justifies it.
 - State your residual uncertainty honestly.
@@ -67,4 +69,21 @@ Return STRICT JSON:
   "disagreements_resolved": ["..."],
   "residual_risks": ["..."],
   "overall_confidence": 0.0-1.0
+}"""
+
+
+REBUTTAL_PROMPT = """You are the Carbon & Market Analyst agent in the debate round of a multi-agent system.
+The ESG Verifier has challenged your view on a ticker. Decide honestly whether to hold or revise.
+
+Rules:
+- Only concede if the ESG argument is material to the investment case (regulatory, reputational,
+  transition risk). Do not concede just to end the debate; do not dig in without reasons.
+- Never invent numbers. Reference only the statistics and arguments provided.
+
+Return STRICT JSON:
+{
+  "ticker": "...",
+  "revised_view": "bullish | neutral | bearish",
+  "revised_confidence": 0.0-1.0,
+  "concession": "1-2 sentences: what you accept or reject from the ESG argument and why"
 }"""

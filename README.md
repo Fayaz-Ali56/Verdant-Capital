@@ -22,6 +22,22 @@ python -m challenge.c02_rare_event # C02 99:1 rare-event stress evidence
 streamlit run app.py          # the demo
 ```
 
+## Tests (no API keys needed)
+```bash
+LLM_PROVIDER=mock python -m pytest -q     # 13 tests: allocator, guard, debate, regression
+```
+
+## What's real vs simulated (say this out loud to judges)
+| Piece | Status |
+|---|---|
+| Market prices, carbon-proxy forecast + holdout MAPE | Real (yfinance), needs internet |
+| ESG verdicts | Real LLM over RAG evidence **if** you add ESG PDFs; otherwise "unverified" |
+| Debate, allocator, output guard | Real, deterministic, tested |
+| Feedback-loop history chart | **Simulated scenario** (scripted hit-rates) |
+| C02 rare-event evidence | **Synthetic data** (harness + imbalance handling, not real-world accuracy) |
+
+See `DEMO.md` for the full 4-minute script.
+
 ## Demo flow (4 min)
 1. Enter mandate: capital, risk, "no greenwashing".
 2. Watch the agents vote + the debate round live.

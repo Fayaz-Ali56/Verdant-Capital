@@ -78,16 +78,21 @@ def main():
 
     report = {
         "challenge": "C02 Severe Class Imbalance / Rare-Event Stress (99:1)",
+        "data_source": "SYNTHETIC - disclosure features are generated from hand-chosen distributions; "
+                      "no real labelled greenwashing dataset is used. Results prove the evaluation "
+                      "harness and imbalance handling, not real-world detection accuracy.",
         "methodology": f"5 random seeds x {N_EVAL:,} eval samples each, 1% positives",
         "seeds": seeds,
         "pr_auc_mean": round(mean_pr, 4), "pr_auc_std": round(std_pr, 4),
         "average_precision_mean": round(float(np.mean(aps)), 4),
         "positive_rate": POS_RATE,
+        "eval_size": N_EVAL,
+        "positives_per_eval": int(N_EVAL * POS_RATE),
         "detector": "IsolationForest(200 trees) anomaly score, unsupervised fit",
         "majority_class_accuracy_trap": round(majority_acc, 4),
         "precision_at_1pct_flag_rate": round(mean_p1, 4),
         "lift_over_random": round(mean_lift, 1),
-        "verdict": (f"Across 5 seeds at 99:1 skew: PR-AUC {mean_pr:.3f} ± {std_pr:.3f} "
+        "verdict": (f"[Synthetic data] Across 5 seeds at 99:1 skew: PR-AUC {mean_pr:.3f} ± {std_pr:.3f} "
                     f"vs random-guess baseline {POS_RATE:.3f}. A useless approve-everything model "
                     f"hits {majority_acc:.0%} accuracy — we measure PR-AUC instead, so collapse is "
                     f"impossible to hide. At a 1% audit budget, {mean_p1:.0%} of flagged cases are "

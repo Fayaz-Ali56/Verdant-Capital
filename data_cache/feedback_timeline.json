@@ -1,4 +1,6 @@
 {
+  "simulated": true,
+  "returns_source": "synthetic",
   "days": [
     {
       "day": 1,
@@ -211,5 +213,5 @@
       "mkt_weight": 1.178
     }
   ],
-  "story": "Day 5: ESG Verifier flagged XOM greenwashing; the Market Analyst had chased the fossil bounce and got burned. From day 6 the feedback loop rewards the ESG agent."
+  "story": "SIMULATED SCENARIO: agent hit-rates are scripted (see _ESG_SKILL / _MKT_BASE_ACC) to demonstrate the re-weighting mechanism. Only the 30-day forward returns are real, and only when prices.csv exists. In this scenario the ESG Verifier flags XOM on day 5, the Market Analyst chases the fossil bounce and is wrong, and the loop re-weights influence."
 }

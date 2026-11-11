@@ -29,11 +29,20 @@ def main():
             n += 1
     print(f"Indexed {n} chunks into {config.RAG_DIR}")
 
-def query(q: str, k: 5):
+_MODEL = None
+
+def _model():
+    global _MODEL
+    if _MODEL is None:
+        _MODEL = SentenceTransformer("all-MiniLM-L6-v2")
+    return _MODEL
+
+def query(q: str, k: int = 5):
     client = chromadb.PersistentClient(path=config.RAG_DIR)
     col = client.get_or_create_collection("esg_docs")
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    res = col.query(query_embeddings=[model.encode(q).tolist()], n_results=k)
+    if col.count() == 0:
+        return []
+    res = col.query(query_embeddings=[_model().encode(q).tolist()], n_results=min(k, col.count()))
     return list(zip(res["documents"][0], [m["source"] for m in res["metadatas"][0]]))
 
 if __name__ == "__main__":
