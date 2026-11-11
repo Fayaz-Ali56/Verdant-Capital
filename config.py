@@ -1,33 +1,27 @@
-"""Central config for Verdant Capital."""
+"""Verdant Capital settings. Never commit a populated .env file."""
+
 import os
-from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent
 
-# --- LLM provider chain: "auto" | "gemini" | "openrouter" | "mock" ---
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "auto")
+try:
+    from dotenv import load_dotenv
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")   # free tier, fast, great JSON
+    load_dotenv(BASE_DIR / ".env")
+except ImportError:
+    pass
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-OPENROUTER_FALLBACK_MODELS = [
-    m.strip() for m in os.getenv(
-        "OPENROUTER_FALLBACK_MODELS",
-        "openrouter/free,"
-        "nvidia/nemotron-3.5-lightning:free,"
-        "qwen/qwen3.8-27b:free",
-    ).split(",") if m.strip()
-]
-MOCK_MODE = os.getenv("MOCK_MODE", "false").lower() == "true"
-
-DATA_DIR = "data_cache"
-RAG_DIR = "rag_db"
+DATA_DIR = str((BASE_DIR / (os.getenv("VERDANT_DATA_DIR") or "data_cache")).resolve())
+RAG_DIR = str((BASE_DIR / (os.getenv("VERDANT_RAG_DIR") or "rag_db")).resolve())
 RAG_PDF_DIR = os.path.join(DATA_DIR, "pdfs")
-FEEDBACK_DB = os.path.join(DATA_DIR, "feedback.db")
-
-CARBON_TICKER = "KRBN"
-DEFAULT_CANDIDATES = ["TSLA", "NEE", "XOM", "ENPH", "ICLN", "VEST"]
-
-DISAGREEMENT_THRESHOLD = 0.15
-MAX_DEBATE_ROUNDS = 2
+FEEDBACK_DB = os.getenv("VERDANT_FEEDBACK_DB") or os.path.join(DATA_DIR, "feedback.db")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "auto").lower()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+CARBON_TICKER = "KRBN"  # ETF proxy, NOT carbon allowance spot prices
+DEFAULT_CANDIDATES = ["NEE", "ENPH", "TSLA", "XOM", "ICLN"]
+DEMO_CANDIDATES = ["SOLR", "WIND", "FOSS"]  # entirely fictional synthetic assets
+MAX_DEBATE_ROUNDS = 1

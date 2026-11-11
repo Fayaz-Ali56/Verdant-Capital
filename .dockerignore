@@ -1,0 +1,16 @@
+.git
+.venv
+venv
+.env
+.env.*
+!.env.example
+data_cache
+rag_db
+dist
+.qa-tools
+__pycache__
+.pytest_cache
+.ruff_cache
+*.db
+*.sqlite*
+*.log

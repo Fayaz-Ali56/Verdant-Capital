@@ -1,0 +1,4 @@
+-r requirements.txt
+langchain-core>=0.3,<2
+langchain-google-genai>=2,<5
+langchain-openai>=0.3,<2

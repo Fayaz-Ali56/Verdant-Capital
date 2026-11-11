@@ -1,90 +1,93 @@
-"""Provider-agnostic LLM layer.
+"""Optional evidence-grounded LLM calls with explicit failure reporting.
 
-Chain: Gemini (primary) -> OpenRouter free model (fallback) -> Mock (last resort).
-Every response is cached to disk so demo rehearsals never burn rate limits.
+If a provider is missing/unavailable, the caller receives None and must use
+an openly labeled deterministic fallback. Never silently synthesize ESG facts.
 """
-import hashlib, json, os, re
+
+import hashlib
+import json
+import re
+from pathlib import Path
+
 import config
+from data.files import write_json
 
 
-def _cache_key(system: str, user: str, provider: str) -> str:
-    raw = f"{provider}|{system}|{user}"
-    return hashlib.sha256(raw.encode()).hexdigest()[:24]
-
-
-def _cache_get(key):
-    path = os.path.join(config.DATA_DIR, "llm_cache.json")
-    if not os.path.exists(path):
-        return None
-    with open(path) as f:
-        return json.load(f).get(key)
-
-
-def _cache_put(key, value):
-    os.makedirs(config.DATA_DIR, exist_ok=True)
-    path = os.path.join(config.DATA_DIR, "llm_cache.json")
-    db = {}
-    if os.path.exists(path):
-        with open(path) as f:
-            db = json.load(f)
-    db[key] = value
-    with open(path, "w") as f:
-        json.dump(db, f)
-
-
-def _extract_json(text: str) -> dict:
-    """Robust JSON extraction: handles markdown fences + surrounding prose."""
-    text = text.strip().removeprefix("```json").removesuffix("```").strip()
+def _parse_json(text):
+    if not isinstance(text, str):
+        raise ValueError("Model output is not text")
+    value = text.strip()
+    if value.startswith("```json"):
+        value = value[7:].strip()
+    if value.startswith("```"):
+        value = value[3:].strip()
+    if value.endswith("```"):
+        value = value[:-3].strip()
     try:
-        return json.loads(text)
+        result = json.loads(value)
     except json.JSONDecodeError:
-        m = re.search(r"\{.*\}", text, re.DOTALL)
-        if m:
-            return json.loads(m.group(0))
-        raise
+        match = re.search(r"\{.*\}", value, re.DOTALL)
+        if not match:
+            raise
+        result = json.loads(match.group(0))
+    if not isinstance(result, dict):
+        raise ValueError("Expected JSON object")
+    return result
 
 
-def _call_gemini(system: str, user: str) -> str:
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    llm = ChatGoogleGenerativeAI(model=config.GEMINI_MODEL,
-                                 google_api_key=config.GEMINI_API_KEY,
-                                 temperature=0)
-    return llm.invoke([{"role": "system", "content": system},
-                       {"role": "user", "content": user}]).content
-
-
-def _call_openrouter(system: str, user: str, model: str) -> str:
-    from langchain_openai import ChatOpenAI
-    llm = ChatOpenAI(model=model,
-                     api_key=config.OPENROUTER_API_KEY,
-                     base_url="https://openrouter.ai/api/v1",
-                     temperature=0)
-    return llm.invoke([{"role": "system", "content": system},
-                       {"role": "user", "content": user}]).content
-
-
-def chat_json(system_prompt: str, user_msg: str, agent_tag: str, ticker: str = "") -> dict:
-    """Try providers in order with disk cache. Never raises: falls back to mock."""
-    from orchestrator.graph import _mock_payload  # single source of mock truth
-
-    user_full = user_msg + "\n\nRespond with STRICT JSON only."
-    providers = []
-    if config.LLM_PROVIDER in ("gemini", "auto") and config.GEMINI_API_KEY:
-        providers.append(("gemini", config.GEMINI_MODEL))
-    if config.LLM_PROVIDER in ("openrouter", "auto") and config.OPENROUTER_API_KEY:
-        providers += [("openrouter", m) for m in config.OPENROUTER_FALLBACK_MODELS]
-
-    for provider, model in providers:
-        key = _cache_key(system_prompt, user_full, f"{provider}:{model}")
-        cached = _cache_get(key)
-        if cached is not None:
-            return cached
+def chat_json(system_prompt, user_message, purpose="esg"):
+    """Returns (payload | None, provenance), never fabricated substitute content."""
+    provider = config.LLM_PROVIDER
+    choices = []
+    if provider in {"auto", "gemini"} and config.GEMINI_API_KEY:
+        choices.append(("gemini", config.GEMINI_MODEL))
+    if provider in {"auto", "openrouter"} and config.OPENROUTER_API_KEY:
+        choices.append(("openrouter", config.OPENROUTER_MODEL))
+    if not choices:
+        return None, "not_configured"
+    key = hashlib.sha256(
+        (purpose + system_prompt + user_message + str(choices)).encode()
+    ).hexdigest()
+    cache = Path(config.DATA_DIR) / "llm_cache"
+    cache_file = cache / f"{key}.json"
+    if cache_file.is_file():
         try:
-            raw = _call_gemini(system_prompt, user_full) if provider == "gemini" \
-                else _call_openrouter(system_prompt, user_full, model)
-            data = _extract_json(raw)
-            _cache_put(key, data)
-            return data
+            return json.loads(cache_file.read_text(encoding="utf-8")), "cache"
+        except (ValueError, OSError):
+            pass
+    for backend, model in choices:
+        try:
+            if backend == "gemini":
+                from langchain_google_genai import ChatGoogleGenerativeAI
+
+                llm = ChatGoogleGenerativeAI(
+                    model=model,
+                    google_api_key=config.GEMINI_API_KEY,
+                    temperature=0,
+                    timeout=20,
+                    max_retries=1,
+                )
+            else:
+                from langchain_openai import ChatOpenAI
+
+                llm = ChatOpenAI(
+                    model=model,
+                    api_key=config.OPENROUTER_API_KEY,
+                    base_url="https://openrouter.ai/api/v1",
+                    temperature=0,
+                    timeout=20,
+                    max_retries=1,
+                )
+            content = llm.invoke(
+                [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message},
+                ]
+            ).content
+            result = _parse_json(content)
+            write_json(cache_file, result)
+            return result, backend
         except Exception as e:
-            print(f"[llm] {provider}:{model} failed -> next fallback. ({type(e).__name__})")
-    return _mock_payload(agent_tag, ticker)
+            # Do not print model output, retrieved documents or keys to stderr.
+            print(f"[llm] {backend} unavailable: {type(e).__name__}; trying backup")
+    return None, "unavailable"

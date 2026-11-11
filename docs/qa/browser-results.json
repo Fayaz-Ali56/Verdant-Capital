@@ -1,0 +1,42 @@
+[
+  {
+    "engine": "chromium",
+    "viewport": "desktop",
+    "width": 1440,
+    "keyboardFocus": true,
+    "overflow": false,
+    "errors": [],
+    "boardroomViolations": [],
+    "c13Violations": []
+  },
+  {
+    "engine": "chromium",
+    "viewport": "tablet",
+    "width": 820,
+    "keyboardFocus": true,
+    "overflow": false,
+    "errors": [],
+    "boardroomViolations": [],
+    "c13Violations": []
+  },
+  {
+    "engine": "chromium",
+    "viewport": "mobile",
+    "width": 390,
+    "keyboardFocus": true,
+    "overflow": false,
+    "errors": [],
+    "boardroomViolations": [],
+    "c13Violations": []
+  },
+  {
+    "engine": "chromium",
+    "viewport": "small-mobile",
+    "width": 320,
+    "keyboardFocus": true,
+    "overflow": false,
+    "errors": [],
+    "boardroomViolations": [],
+    "c13Violations": []
+  }
+]

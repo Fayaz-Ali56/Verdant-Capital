@@ -1,101 +1,113 @@
-"""Carbon-credit price forecasting. Run: python -m data.carbon_forecast
+"""Carbon-ETF proxy forecast and dated holdout. NOT a carbon-credit spot forecast.
 
-Uses Prophet if available; falls back to a robust linear-trend model so the
-pipeline NEVER breaks on install day. Saves forecast + summary for the dashboard
-and feeds the carbon outlook into the Market Analyst agent.
+Run: python -m data.carbon_forecast
+Forecast uncertainty is a heuristic interval, not a calibrated statistical guarantee.
 """
-import json, os
+
+import json
+from pathlib import Path
+
+import numpy as np
 import pandas as pd
+
 import config
+from data.fetch_market import fetch, load_cached_prices
+from data.files import write_json, write_text
 
-DAYS = 30
+HORIZON = 30  # trading sessions, not calendar days
 
-def _load_prices() -> pd.Series:
-    path = os.path.join(config.DATA_DIR, "prices.csv")
-    if os.path.exists(path):
-        df = pd.read_csv(path, index_col=0, parse_dates=True)
-        if config.CARBON_TICKER in df.columns:
-            return df[config.CARBON_TICKER].dropna()
-    import yfinance as yf
-    s = yf.download(config.CARBON_TICKER, period="1y", auto_adjust=True)["Close"]
-    return s.dropna()
 
-def _prophet_forecast(series: pd.Series):
-    from prophet import Prophet
-    df = pd.DataFrame({"ds": series.index, "y": series.values})
-    m = Prophet(daily_seasonality=False, weekly_seasonality=True,
-                yearly_seasonality=True, interval_width=0.8)
-    m.fit(df)
-    future = m.make_future_dataframe(periods=DAYS)
-    fc = m.predict(future)
-    return fc[["ds", "yhat", "yhat_lower", "yhat_upper"]], "prophet"
+def _load_prices():
+    frame = load_cached_prices()
+    if config.CARBON_TICKER in frame.columns and len(frame[config.CARBON_TICKER].dropna()) >= 65:
+        return frame[config.CARBON_TICKER].dropna()
+    fresh = fetch([config.CARBON_TICKER])
+    return fresh[config.CARBON_TICKER].dropna()
 
-def _linear_fallback(series: pd.Series):
-    """Weighted linear trend + 20d rolling volatility bands. Good enough to demo."""
-    import numpy as np
-    x = np.arange(len(series), dtype=float)
-    w = np.linspace(0.5, 1.0, len(series))          # recent data weighs more
-    a, b = np.polyfit(x, series.values, 1, w=w)
-    future_x = np.arange(len(series), len(series) + DAYS, dtype=float)
-    yhat = a * future_x + b
-    resid = series.values - (a * x + b)
-    band = float(np.nanstd(resid[-60:])) * 1.28
-    last_date = series.index[-1]
-    fut_dates = pd.date_range(last_date + pd.Timedelta(days=1), periods=DAYS)
-    hist = pd.DataFrame({"ds": series.index, "yhat": a * x + b,
-                         "yhat_lower": a * x + b - band, "yhat_upper": a * x + b + band})
-    fut = pd.DataFrame({"ds": fut_dates, "yhat": yhat,
-                        "yhat_lower": yhat - band, "yhat_upper": yhat + band})
-    return pd.concat([hist, fut], ignore_index=True), "linear-trend"
 
-def _backtest_mape(series: pd.Series, horizon: int = 30):
-    """Honest accuracy number: fit on all but last `horizon` days, score the holdout."""
-    if len(series) < horizon + 60:
-        return None
-    train, test = series.iloc[:-horizon], series.iloc[-horizon:]
-    try:
-        fc, _ = _prophet_forecast(train)
-    except Exception:
-        fc, _ = _linear_fallback(train)
-    pred = fc.set_index("ds")["yhat"].reindex(test.index).ffill()
-    mape = float(((test - pred).abs() / test).mean() * 100)
-    return round(mape, 2)
+def forecast(series, horizon=HORIZON):
+    """Regularized recent log-linear trend; reproduces without Prophet."""
+    s = pd.to_numeric(series, errors="coerce").dropna()
+    s = s[(s > 0) & np.isfinite(s)]
+    if not isinstance(horizon, int) or not 1 <= horizon <= 252:
+        raise ValueError("Forecast horizon must be between 1 and 252 trading sessions")
+    if len(s) < 65:
+        raise ValueError("At least 65 valid market observations are required")
+    s = s.iloc[-180:]
+    x = np.arange(len(s), dtype=float)
+    logy = np.log(s.to_numpy())
+    slope, _intercept = np.polyfit(x, logy, deg=1)
+    daily_drift = float(np.clip(slope, -0.009, 0.009))
+    projected = float(s.iloc[-1]) * np.exp(daily_drift * np.arange(1, horizon + 1))
+    residual_vol = float(np.std(np.diff(logy) - daily_drift))
+    offsets = np.arange(1, horizon + 1)
+    # These are approximate volatility bands, NOT calibrated 80% intervals.
+    spread = 1.28 * max(residual_vol, 0.0001) * np.sqrt(offsets)
+    start = pd.Timestamp(s.index[-1])
+    dates = pd.bdate_range(start + pd.offsets.BDay(1), periods=horizon)
+    output = pd.DataFrame(
+        {
+            "ds": dates,
+            "yhat": projected,
+            "yhat_lower": projected * np.exp(-spread),
+            "yhat_upper": projected * np.exp(spread),
+        }
+    )
+    return output
+
 
 def main():
     series = _load_prices()
+    future = forecast(series)
+    end = float(future["yhat"].iloc[-1])
+    current = float(series.iloc[-1])
+    pct = (end / current - 1) * 100
+    holdout = series.iloc[-HORIZON:]
     try:
-        fc, engine = _prophet_forecast(series)
-    except Exception as e:
-        print(f"[carbon] Prophet unavailable ({type(e).__name__}) -> linear fallback")
-        fc, engine = _linear_fallback(series)
+        predictions = forecast(series.iloc[:-HORIZON], horizon=HORIZON)
+        mean_absolute_pct_error = float(
+            np.mean(
+                np.abs((holdout.to_numpy() - predictions["yhat"].to_numpy()) / holdout.to_numpy())
+            )
+            * 100
+        )
+    except (ValueError, ZeroDivisionError):
+        mean_absolute_pct_error = None
+    report = {
+        "ticker": config.CARBON_TICKER,
+        "instrument_type": "carbon-related ETF proxy",
+        "engine": "regularized log-linear trend",
+        "last_price": round(current, 4),
+        "forecast_30d": round(end, 4),
+        "forecast_trading_sessions": HORIZON,
+        "change_pct_30d": round(pct, 3),
+        "outlook": "rising" if pct > 1.5 else ("falling" if pct < -1.5 else "stable"),
+        "backtest_mape_pct": round(mean_absolute_pct_error, 3)
+        if mean_absolute_pct_error is not None
+        else None,
+        "market_data_as_of": str(pd.Timestamp(series.index[-1]).date()),
+        "mode": "historical_market_data",
+        "uncertainty": "heuristic volatility bands; not calibrated",
+        "disclaimer": "KRBN is a listed ETF proxy, not the price of a specific carbon allowance or spot credit.",
+    }
+    dest = Path(config.DATA_DIR)
+    dest.mkdir(parents=True, exist_ok=True)
+    write_text(dest / "carbon_forecast.csv", future.to_csv(index=False))
+    write_json(dest / "carbon_summary.json", report)
+    print(json.dumps(report, indent=2))
+    return report
 
-    hist_last = float(series.iloc[-1])
-    fut = fc[fc["ds"] > series.index[-1]]
-    fut_last = float(fut["yhat"].iloc[-1])
-    change_pct = round((fut_last / hist_last - 1) * 100, 2)
-    outlook = "rising" if change_pct > 1.5 else ("falling" if change_pct < -1.5 else "stable")
 
-    mape = _backtest_mape(series)
-    summary = {"engine": engine, "ticker": config.CARBON_TICKER,
-               "last_price": round(hist_last, 2),
-               "forecast_30d": round(fut_last, 2),
-               "change_pct_30d": change_pct,
-               "outlook": outlook,
-               "backtest_mape_pct": mape,
-               "computed": str(pd.Timestamp.now().date())}
-
-    os.makedirs(config.DATA_DIR, exist_ok=True)
-    fc.to_csv(os.path.join(config.DATA_DIR, "carbon_forecast.csv"), index=False)
-    with open(os.path.join(config.DATA_DIR, "carbon_summary.json"), "w") as f:
-        json.dump(summary, f, indent=2)
-    print(json.dumps(summary, indent=2))
-
-def carbon_summary() -> dict:
-    path = os.path.join(config.DATA_DIR, "carbon_summary.json")
-    if os.path.exists(path):
-        with open(path) as f:
-            return json.load(f)
+def carbon_summary():
+    path = Path(config.DATA_DIR) / "carbon_summary.json"
+    if path.is_file():
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+            return value if isinstance(value, dict) else {}
+        except (OSError, ValueError):
+            pass
     return {}
+
 
 if __name__ == "__main__":
     main()

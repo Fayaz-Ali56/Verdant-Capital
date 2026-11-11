@@ -1,0 +1,180 @@
+{
+  "challenge": "C06 Explainability and Feature Attribution",
+  "data_type": "synthetic",
+  "model": "IsolationForest anomaly score from C02 seed 7",
+  "method": "Model-agnostic permutation SHAP",
+  "feature_count": 6,
+  "threshold": 0.0,
+  "cases": [
+    {
+      "case_id": 1,
+      "case_type": "true_positive",
+      "requested_case_type": "true_positive",
+      "eval_index": 3960,
+      "data_type": "synthetic",
+      "true_label": 1,
+      "predicted_label": 1,
+      "decision": "flag_for_review",
+      "anomaly_score": 0.00141556,
+      "decision_threshold": 0.0,
+      "base_score": -0.22598368,
+      "reconstructed_score": 0.00141556,
+      "feature_values": {
+        "vague_language_ratio": 0.2686535517368192,
+        "sentiment_gap": 0.17311573242264386,
+        "missing_baseline": 0.0,
+        "no_third_party_verif": 1.0,
+        "capex_backing_ratio": 0.25728805687617085,
+        "intensity_anomaly": 0.36146464737119427
+      },
+      "attributions": [
+        {
+          "feature": "no_third_party_verif",
+          "shap_value": 0.08814664,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "intensity_anomaly",
+          "shap_value": 0.0680859,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "vague_language_ratio",
+          "shap_value": 0.03803479,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "capex_backing_ratio",
+          "shap_value": 0.03646376,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "missing_baseline",
+          "shap_value": -0.01138346,
+          "direction": "lowers_suspicion"
+        },
+        {
+          "feature": "sentiment_gap",
+          "shap_value": 0.0080516,
+          "direction": "raises_suspicion"
+        }
+      ],
+      "plot": "c06_case_1.png"
+    },
+    {
+      "case_id": 2,
+      "case_type": "false_positive",
+      "requested_case_type": "false_positive",
+      "eval_index": 3163,
+      "data_type": "synthetic",
+      "true_label": 0,
+      "predicted_label": 1,
+      "decision": "flag_for_review",
+      "anomaly_score": 0.0017445,
+      "decision_threshold": 0.0,
+      "base_score": -0.22598368,
+      "reconstructed_score": 0.0017445,
+      "feature_values": {
+        "vague_language_ratio": 0.03530908056500098,
+        "sentiment_gap": 0.1387446873719832,
+        "missing_baseline": 1.0,
+        "no_third_party_verif": 1.0,
+        "capex_backing_ratio": 0.6923872630606444,
+        "intensity_anomaly": 0.01499109727728714
+      },
+      "attributions": [
+        {
+          "feature": "missing_baseline",
+          "shap_value": 0.10052287,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "no_third_party_verif",
+          "shap_value": 0.09872645,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "vague_language_ratio",
+          "shap_value": 0.03402312,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "capex_backing_ratio",
+          "shap_value": 0.0087887,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "intensity_anomaly",
+          "shap_value": -0.00783956,
+          "direction": "lowers_suspicion"
+        },
+        {
+          "feature": "sentiment_gap",
+          "shap_value": -0.00649339,
+          "direction": "lowers_suspicion"
+        }
+      ],
+      "plot": "c06_case_2.png"
+    },
+    {
+      "case_id": 3,
+      "case_type": "false_negative",
+      "requested_case_type": "false_negative",
+      "eval_index": 4256,
+      "data_type": "synthetic",
+      "true_label": 1,
+      "predicted_label": 0,
+      "decision": "not_flagged",
+      "anomaly_score": -0.01198364,
+      "decision_threshold": 0.0,
+      "base_score": -0.22598368,
+      "reconstructed_score": -0.01198364,
+      "feature_values": {
+        "vague_language_ratio": 0.08969988383027705,
+        "sentiment_gap": 0.1842218743913919,
+        "missing_baseline": 1.0,
+        "no_third_party_verif": 0.0,
+        "capex_backing_ratio": 0.24405177097573058,
+        "intensity_anomaly": 0.16506463165995072
+      },
+      "attributions": [
+        {
+          "feature": "missing_baseline",
+          "shap_value": 0.11141636,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "capex_backing_ratio",
+          "shap_value": 0.04384076,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "intensity_anomaly",
+          "shap_value": 0.04033871,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "sentiment_gap",
+          "shap_value": 0.01593101,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "vague_language_ratio",
+          "shap_value": 0.00531547,
+          "direction": "raises_suspicion"
+        },
+        {
+          "feature": "no_third_party_verif",
+          "shap_value": -0.00284227,
+          "direction": "lowers_suspicion"
+        }
+      ],
+      "plot": "c06_case_3.png"
+    }
+  ],
+  "limitations": [
+    "Feature values are synthetic and are not taken from company documents.",
+    "SHAP values explain this model's anomaly score, not causality or fraud probability.",
+    "Predictions are review flags, not regulatory approvals or rejections."
+  ]
+}
