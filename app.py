@@ -42,6 +42,50 @@ if os.path.exists(fc_path) and os.path.exists(sum_path):
 else:
     st.info("Run `python -m data.carbon_forecast` to generate the carbon forecast.")
 
+# ---- 📊 Adaptive Feedback Loop (backtest killshot) ----
+tl_path = os.path.join(config.DATA_DIR, "feedback_timeline.json")
+if os.path.exists(tl_path):
+    import plotly.graph_objects as go
+    tl = json.load(open(tl_path))["days"]
+    st.subheader("📊 Adaptive Feedback Loop — Agents Get Smarter")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=[d["day"] for d in tl], y=[d["esg_weight"] for d in tl],
+                             name="ESG Verifier influence", line=dict(color="#2ecc71", width=3)))
+    fig.add_trace(go.Scatter(x=[d["day"] for d in tl], y=[d["mkt_weight"] for d in tl],
+                             name="Market Analyst influence", line=dict(color="#3498db", width=3,
+                             dash="dash")))
+    fig.update_layout(height=300, yaxis_title="influence weight",
+                      margin=dict(l=10, r=10, t=10, b=10))
+    st.plotly_chart(fig, use_container_width=True)
+    st.caption("Day 5: ESG Verifier flagged XOM greenwashing before the market caught on — "
+               "the loop measurably re-weighted agent influence.")
+else:
+    st.info("Run `python -m data.feedback_backtest` to generate the adaptive-weights timeline.")
+
+# ---- 🧪 C02 Rare-Event Stress Test ----
+c02_path = os.path.join(config.DATA_DIR, "c02_report.json")
+if os.path.exists(c02_path) and os.path.exists(os.path.join(config.DATA_DIR, "c02_pr_curve.json")):
+    import plotly.graph_objects as go
+    r = json.load(open(c02_path))
+    curve = json.load(open(os.path.join(config.DATA_DIR, "c02_pr_curve.json")))
+    st.subheader("🧪 C02 — Severe Class Imbalance Stress Test (99:1 skew)")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("PR-AUC", f"{r['pr_auc']:.3f}", f"{round(r['pr_auc']/r['positive_rate'],1)}x baseline")
+    c2.metric("Eval split", f"{r['eval_size']:,}", f"1% positives")
+    c3.metric("Accuracy trap", f"{r['majority_class_accuracy_trap']:.0%}", "useless model")
+    c4.metric("Lift @1% audit", f"{r['lift_over_random']}x")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=curve["recall"], y=curve["precision"], fill="tozeroy",
+                             name="Our detector", line=dict(color="#e74c3c", width=3)))
+    fig.add_hline(y=r["positive_rate"], line_dash="dot",
+                  annotation_text="random-guess baseline (1%)")
+    fig.update_layout(height=300, xaxis_title="recall", yaxis_title="precision",
+                      margin=dict(l=10, r=10, t=10, b=10))
+    st.plotly_chart(fig, use_container_width=True)
+    st.success(r["verdict"])
+else:
+    st.info("Run `python -m challenge.c02_rare_event` to generate the C02 stress-test evidence.")
+
 with st.sidebar:
     st.header("Investment Mandate")
     capital = st.number_input("Capital (USD)", value=100_000, step=10_000)

@@ -9,12 +9,16 @@ that re-weights agent influence based on measured accuracy.
 ## Quick start
 ```bash
 pip install -r requirements.txt
+pip install scikit-learn   # C02 harness dependency
 cp .env.example .env        # paste your GEMINI_API_KEY (aistudio.google.com/apikey)
 # optional backup brain: OPENROUTER_API_KEY (free, no card: openrouter.ai/keys)
 # LLM_PROVIDER=auto  -> Gemini -> OpenRouter free -> mock (never crashes a demo)
 python -m data.fetch_market # pulls real prices + carbon-proxy data
 python -m data.build_rag    # after dropping ESG PDFs into data_cache/pdfs/
 python -m orchestrator.graph  # CLI smoke test
+python -m data.carbon_forecast # carbon forecast + honest backtest
+python -m data.feedback_backtest # 30-day adaptive-weights timeline
+python -m challenge.c02_rare_event # C02 99:1 rare-event stress evidence
 streamlit run app.py          # the demo
 ```
 

@@ -1,0 +1,28 @@
+{
+  "challenge": "C02 Severe Class Imbalance / Rare-Event Stress (99:1)",
+  "methodology": "5 random seeds x 5,000 eval samples each, 1% positives",
+  "seeds": [
+    7,
+    13,
+    21,
+    34,
+    55
+  ],
+  "pr_auc_mean": 0.9583,
+  "pr_auc_std": 0.0214,
+  "average_precision_mean": 0.9586,
+  "positive_rate": 0.01,
+  "detector": "IsolationForest(200 trees) anomaly score, unsupervised fit",
+  "majority_class_accuracy_trap": 0.99,
+  "precision_at_1pct_flag_rate": 0.9,
+  "lift_over_random": 90.0,
+  "verdict": "Across 5 seeds at 99:1 skew: PR-AUC 0.958 \u00b1 0.021 vs random-guess baseline 0.010. A useless approve-everything model hits 99% accuracy \u2014 we measure PR-AUC instead, so collapse is impossible to hide. At a 1% audit budget, 90% of flagged cases are true fraud (90x lift).",
+  "features": [
+    "vague_language_ratio",
+    "sentiment_gap",
+    "missing_baseline",
+    "no_third_party_verif",
+    "capex_backing_ratio",
+    "intensity_anomaly"
+  ]
+}

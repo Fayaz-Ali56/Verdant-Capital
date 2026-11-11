@@ -1,0 +1,215 @@
+{
+  "days": [
+    {
+      "day": 1,
+      "esg_acc": 0.667,
+      "mkt_acc": 0.5,
+      "esg_weight": 1.167,
+      "mkt_weight": 1.0
+    },
+    {
+      "day": 2,
+      "esg_acc": 0.667,
+      "mkt_acc": 0.5,
+      "esg_weight": 1.167,
+      "mkt_weight": 1.0
+    },
+    {
+      "day": 3,
+      "esg_acc": 0.667,
+      "mkt_acc": 0.333,
+      "esg_weight": 1.167,
+      "mkt_weight": 0.944
+    },
+    {
+      "day": 4,
+      "esg_acc": 0.333,
+      "mkt_acc": 0.5,
+      "esg_weight": 1.083,
+      "mkt_weight": 0.958
+    },
+    {
+      "day": 5,
+      "esg_acc": 0.5,
+      "mkt_acc": 0.5,
+      "esg_weight": 1.067,
+      "mkt_weight": 0.967
+    },
+    {
+      "day": 6,
+      "esg_acc": 1.0,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.139,
+      "mkt_weight": 1.028
+    },
+    {
+      "day": 7,
+      "esg_acc": 0.5,
+      "mkt_acc": 1.0,
+      "esg_weight": 1.119,
+      "mkt_weight": 1.095
+    },
+    {
+      "day": 8,
+      "esg_acc": 1.0,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.167,
+      "mkt_weight": 1.125
+    },
+    {
+      "day": 9,
+      "esg_acc": 0.667,
+      "mkt_acc": 0.5,
+      "esg_weight": 1.167,
+      "mkt_weight": 1.111
+    },
+    {
+      "day": 10,
+      "esg_acc": 0.667,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.167,
+      "mkt_weight": 1.133
+    },
+    {
+      "day": 11,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.182,
+      "mkt_weight": 1.152
+    },
+    {
+      "day": 12,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.667,
+      "esg_weight": 1.194,
+      "mkt_weight": 1.153
+    },
+    {
+      "day": 13,
+      "esg_acc": 1.0,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.218,
+      "mkt_weight": 1.167
+    },
+    {
+      "day": 14,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.226,
+      "mkt_weight": 1.179
+    },
+    {
+      "day": 15,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.667,
+      "esg_weight": 1.233,
+      "mkt_weight": 1.178
+    },
+    {
+      "day": 16,
+      "esg_acc": 0.5,
+      "mkt_acc": 0.5,
+      "esg_weight": 1.219,
+      "mkt_weight": 1.167
+    },
+    {
+      "day": 17,
+      "esg_acc": 1.0,
+      "mkt_acc": 0.333,
+      "esg_weight": 1.235,
+      "mkt_weight": 1.147
+    },
+    {
+      "day": 18,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.241,
+      "mkt_weight": 1.157
+    },
+    {
+      "day": 19,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.667,
+      "esg_weight": 1.246,
+      "mkt_weight": 1.158
+    },
+    {
+      "day": 20,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.25,
+      "mkt_weight": 1.167
+    },
+    {
+      "day": 21,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.333,
+      "esg_weight": 1.254,
+      "mkt_weight": 1.151
+    },
+    {
+      "day": 22,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.258,
+      "mkt_weight": 1.159
+    },
+    {
+      "day": 23,
+      "esg_acc": 1.0,
+      "mkt_acc": 0.667,
+      "esg_weight": 1.268,
+      "mkt_weight": 1.159
+    },
+    {
+      "day": 24,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.271,
+      "mkt_weight": 1.167
+    },
+    {
+      "day": 25,
+      "esg_acc": 1.0,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.28,
+      "mkt_weight": 1.173
+    },
+    {
+      "day": 26,
+      "esg_acc": 0.833,
+      "mkt_acc": 0.5,
+      "esg_weight": 1.282,
+      "mkt_weight": 1.167
+    },
+    {
+      "day": 27,
+      "esg_acc": 0.667,
+      "mkt_acc": 0.5,
+      "esg_weight": 1.278,
+      "mkt_weight": 1.16
+    },
+    {
+      "day": 28,
+      "esg_acc": 0.833,
+      "mkt_acc": 1.0,
+      "esg_weight": 1.28,
+      "mkt_weight": 1.173
+    },
+    {
+      "day": 29,
+      "esg_acc": 0.5,
+      "mkt_acc": 0.667,
+      "esg_weight": 1.27,
+      "mkt_weight": 1.172
+    },
+    {
+      "day": 30,
+      "esg_acc": 0.667,
+      "mkt_acc": 0.833,
+      "esg_weight": 1.267,
+      "mkt_weight": 1.178
+    }
+  ],
+  "story": "Day 5: ESG Verifier flagged XOM greenwashing; the Market Analyst had chased the fossil bounce and got burned. From day 6 the feedback loop rewards the ESG agent."
+}
