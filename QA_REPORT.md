@@ -23,7 +23,7 @@ tenant isolation are not implemented; this is a trusted single-operator tool.
 
 ## Final audit pass (C04 / C15 additions)
 
-Re-run in this pass: ruff (standard and extended rule sets), bandit (0 high; the one medium is a parameterized-placeholder query, annotated), vulture (clean), pip-audit (no known vulnerabilities), deptry (only the optional LLM/RAG packages that live in their own requirements files), 70 passing tests, the real Streamlit smoke flows, and a fuzz of the C04 guard and C15 formula. Fuzzing found and fixed two bugs (see CHANGELOG). A 6-thread concurrent C15 run returned identical results.
+Re-run in this pass: ruff (standard and extended rule sets), bandit (0 high; the one medium is a parameterized-placeholder query, annotated), vulture (clean), pip-audit (no known vulnerabilities), deptry (only the optional LLM/RAG packages that live in their own requirements files), 51 passing tests, the real Streamlit smoke flows, and a fuzz of the C04 guard and C15 formula. Fuzzing found and fixed two bugs (see CHANGELOG). A 6-thread concurrent C15 run returned identical results.
 
 **Not re-run in this pass (no browser available in the audit environment):** the Chromium multi-viewport matrix, axe, and Lighthouse for the new C04/C15 view; Firefox/WebKit and real mobile devices remain unverified. The new view uses only native Streamlit components, but treat its accessibility and performance as unmeasured until `tools/browser_qa.cjs` is run on your machine. Light mode is not offered; the app is dark by design.
 
@@ -139,7 +139,7 @@ zoom/forced-colors and complete WCAG 2.2 testing remain unverified.
 | P2 | Real market refresh | Existing user Windows run demonstrated downloads; this final audit uses offline tests and injected cache cases rather than claiming a new live-provider validation |
 | P2 | Full WCAG certification | Automated and selected keyboard/motion checks only; manual assistive-technology coverage remains |
 | Product scope | Real-world financial/ESG validity | Synthetic features/costs, heuristic confidence and uncalibrated forecasts; no external issuer/default validation or automatic future-outcome collection |
-| Owner decision | Licensing | Explicitly pending, as requested. LICENSE grants no new reuse rights; upstream attribution retained |
+| Owner decision | Licensing | Proprietary — All Rights Reserved notice added; contributors retain their respective rights and third-party licenses remain separate |
 
 No tests, assertions, security checks or TLS verification were disabled to make
 these results pass. Browser install denials were recorded rather than bypassed.
@@ -159,3 +159,27 @@ caches, PDFs, provider caches, SQLite state, temporary QA tools and installed
 virtual environments are excluded. The archive contains the updated README,
 QA report, changelog, environment template, source, tests, configs, attribution and
 actual screenshots. GitHub `main` is the source of truth after the final push.
+
+
+## Finalization patch — 2026-11-12
+
+The hackathon review identified two mission-integration improvements, now included
+in the source: (1) the dated KRBN ETF-proxy trend can enter the optimizer only
+when KRBN is explicitly selected, using 25% shrinkage and a +/-5 annualized
+percentage-point cap; and (2) the memo now records per-asset allocation
+explanations, including ESG cap, ESG verdict, expected-return contribution,
+variance contribution and any carbon-proxy adjustment. C13 also accepts an
+optional user-supplied `--usd-pkr` scenario conversion while preserving USD as
+the calculation basis. No UI redesign was made.
+
+The assignment mapping is now explicit: this repository's C02/C06/C13 modules
+implement the **Battle of Intelligence** definitions (rare-event stress,
+explainability, cost-sensitive threshold optimization), not the different
+Battle of Byte cards with the same numbers.
+
+Patch verification in the packaging environment: `compileall` passed; direct
+portfolio execution confirmed the carbon scenario is capped at 5.0 percentage
+points and applies only to KRBN; the complete test suite could not be rerun here
+because Streamlit and LangGraph are absent and package installation was blocked
+by unavailable network access. The original QA measurements above are retained
+as historical evidence, not represented as a fresh rerun of this patch.

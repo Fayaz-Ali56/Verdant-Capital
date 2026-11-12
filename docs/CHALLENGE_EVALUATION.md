@@ -1,5 +1,13 @@
 # Verdant Capital — C02, C06 & C13 Evaluation and Audit Evidence
 
+## Assignment mapping
+
+This evaluation targets **Battle of Intelligence — Pillar 2: Green Capital
+Allocation & Portfolio Intelligence**. C02 means Severe Class Imbalance /
+Rare-Event Stress, C06 means Explainability & Feature Attribution, and C13
+means Cost-Sensitive Threshold Optimization. Do not confuse these with the
+different Battle of Byte cards carrying the same numbers.
+
 ## Objective and scope
 
 The 3-agent Verdant Capital architecture evaluates sustainable-investment candidates through ESG, market and portfolio analysis. C02 and C06 are a **research audit laboratory** for the ESG Verifier, not a separate AI agent.

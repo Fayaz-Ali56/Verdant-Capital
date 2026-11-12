@@ -8,5 +8,5 @@
 - Export a decision audit and the C13 scenario you actually present.
 - For historical mode, refresh the price cache before review.
 - Keep .env, PDFs and local databases out of the submission archive.
-- Read QA_REPORT.md and state its limits accurately; licensing remains pending.
+- Read QA_REPORT.md and state its limits accurately; review LICENSE and NOTICE.md for ownership, attribution and third-party terms.
 - Keep an offline recording or screenshots as a presentation backup.

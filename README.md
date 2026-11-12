@@ -8,6 +8,9 @@ An investment research studio that makes evidence gaps, portfolio constraints, a
 
 **Three specialist roles · Constrained allocation · Inspectable evidence**
 
+**Repository maintainer:** [Fayaz Ali](https://github.com/Fayaz-Ali56)  
+**Project credit:** Team Cypher — see [NOTICE.md](NOTICE.md) for attribution and rights information.
+
 [Quick start](#quick-start) · [Judge walkthrough](#the-four-minute-walkthrough) · [Architecture](#architecture) · [QA report](QA_REPORT.md) · [Changes](CHANGELOG.md)
 
 </div>
@@ -18,6 +21,12 @@ An investment research studio that makes evidence gaps, portfolio constraints, a
 
 ## What it does
 
+Verdant Capital is a research and decision-support prototype—not an automated trading
+system, a source of personalized financial advice, or a guarantee of environmental
+impact. It makes the assumptions behind a recommendation inspectable so that a
+human reviewer can challenge the evidence and constraints before acting.
+
+
 Verdant brings a mandate through three distinct responsibilities: examine ESG
 source evidence, summarize dated market signals, and calculate an allocation
 under explicit constraints. A bounded evidence review handles the implemented
@@ -25,12 +34,31 @@ high-ESG-risk / bullish-market conflict. A deterministic memo records the result
 
 - **Investment boardroom:** risk settings, exposure caps, cash fallback, specialist evidence, hypothetical demo stress events, and JSON export.
 - **Risk Lab:** C02 rare-event detection, C06 feature attribution, C13 cost-sensitive threshold selection with a held-out economic audit, C04 out-of-bounds input guard, and C15 net financial gain in PKR.
-- **Market intelligence:** cached adjusted prices, a KRBN carbon-related ETF projection, and a separately labeled feedback simulation.
+- **Market intelligence:** cached adjusted prices, a KRBN carbon-related ETF projection, a bounded carbon-proxy scenario input when KRBN is explicitly selected, and a separately labeled feedback simulation.
 - **Audit trail:** timestamped SQLite recommendations, policy reason codes, provenance and evidence citations.
 
 The selected workspace alone renders. Opening the boardroom does not train C13
 or load a large chart bundle. Native controls, visible keyboard focus, reduced
 motion, responsive layout and explicit recovery states support the main flow.
+
+
+## Assigned hackathon scope
+
+This submission is aligned to **Battle of Intelligence — Mission/Pillar 2: Green
+Capital Allocation & Portfolio Intelligence**. The three matching challenge
+implementations in this repository are:
+
+- **C02 — Severe Class Imbalance / Rare-Event Stress:** 99:1 synthetic evaluation
+  with PR-AUC / Average Precision and a majority-class-collapse check.
+- **C06 — Explainability & Feature Attribution:** three held-out edge-case SHAP
+  explanations of the C02 anomaly score, with local additivity checks.
+- **C13 — Cost-Sensitive Threshold Optimization:** a financial cost matrix,
+  validation-only threshold selection and a separate held-out confusion matrix.
+
+These are the **Battle of Intelligence** card definitions. The separately named
+Battle of Byte cards C02 (concurrency), C06 (replay protection), and C13
+(adversarial evasion) are different challenges and are not claimed as completed
+by these C02/C06/C13 benchmark modules.
 
 ## Quick start
 
@@ -125,8 +153,12 @@ Download dated market data before selecting Historical market cache:
 Return to the boardroom and run the review again. These commands use Yahoo
 Finance through yfinance. Clicking review reads the local cache; it does not
 refresh prices automatically. Missing/invalid prices receive zero exposure.
-KRBN is an ETF proxy, not a spot carbon-credit quote. Its trend projection is
-market context, not a direct optimizer input or a calibrated prediction.
+KRBN is an ETF proxy, not a spot carbon-credit quote. When KRBN is explicitly
+in the selected portfolio universe, its 30-session proxy change is shrunk to 25%
+and capped at +/-5 annualized percentage points as a transparent scenario input
+to that KRBN position only. It does not alter other issuers, and it is not a
+calibrated prediction or a direct carbon-credit spot-price forecast. The memo
+records the scenario adjustment and per-asset allocation explanations.
 
 Optional issuer-report analysis:
 
@@ -280,9 +312,13 @@ QA_REPORT.md marks them unrun.
 - Verified future outcomes before automated feedback adaptation.
 - Frontend delivery improvements beyond the current Streamlit framework limits.
 
-## Licensing and attribution
+## Ownership, licensing and attribution
 
-**Licensing is explicitly pending**, as selected by the project owner. Public
-visibility does not grant a reuse license. See [LICENSE](LICENSE) and
-[NOTICE.md](NOTICE.md) before redistribution or commercial use. Original project
-attribution to Team Cypher and the upstream repository is retained in NOTICE.md.
+Verdant Capital was developed as a hackathon project by **Team Cypher**. The
+repository is maintained by [Fayaz Ali](https://github.com/Fayaz-Ali56). The
+project uses a **Proprietary — All Rights Reserved** notice: public visibility
+does not grant permission to copy, modify, redistribute, sublicense, or
+commercially use the original project materials. Individual contributors retain
+whatever rights they hold in their contributions unless a separate written
+agreement provides otherwise. Third-party components remain under their own
+licenses. Read [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md) before reuse.

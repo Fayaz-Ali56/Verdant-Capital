@@ -1,11 +1,38 @@
-LICENSING PENDING
+PROPRIETARY LICENSE — ALL RIGHTS RESERVED
 
-No project-wide open-source license has been granted by this submission.
-Copyright and all existing rights remain with their respective holders.
-Public repository visibility does not itself grant permission to reuse,
-redistribute, sublicense, or commercially exploit the source.
+Copyright © 2026 Team Cypher and the project contributors.
+All rights reserved.
 
-The project owner selected "Keep licensing explicitly pending" for this release.
-Confirm rights in all upstream contributions and add the chosen license before
-redistribution or commercial reuse. Third-party packages retain their own licenses.
-See NOTICE.md for source attribution.
+This repository is made publicly visible for portfolio, educational, and
+review purposes only. Unless the relevant rights holder gives prior written
+permission, no person or organization is granted permission to copy, modify,
+adapt, publish, distribute, sublicense, sell, commercially exploit, or create
+derivative works from the project source code or original project materials.
+
+You may view the repository and refer to the project by its name and provide
+attribution. This does not grant permission to reuse or republish its source
+code, designs, documentation, datasets, or other protected materials.
+
+AUTHorship AND CONTRIBUTOR RIGHTS
+
+Team Cypher is the project attribution used by the contributors. This notice
+does not represent that Team Cypher is a separately incorporated legal entity
+or transfer an individual contributor's copyright to another contributor.
+Each contributor retains whatever rights they hold in their own contributions
+unless a separate written agreement states otherwise. Permission for reuse
+that includes contributions by multiple rights holders must be obtained from
+all relevant rights holders.
+
+THIRD-PARTY MATERIALS
+
+Third-party libraries, assets, datasets, trademarks, and upstream materials
+are not relicensed by this notice. They remain subject to their respective
+licenses, terms, and rights. See NOTICE.md for attribution information.
+
+NO WARRANTY
+
+The project is provided "AS IS", without warranty of any kind, express or
+implied, to the extent permitted by applicable law.
+
+For written permission or licensing inquiries, contact the project
+contributors through the repository maintainer.

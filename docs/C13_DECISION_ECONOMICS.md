@@ -78,3 +78,17 @@ the historical ticker portfolio. Real deployment needs measured audit expense,
 exposure/LGD and intervention effectiveness, issuer/time-separated datasets,
 capacity constraints, prevalence/cost sensitivity and stability evaluation.
 This demonstration does not approve loans or substantiate real financial savings.
+
+
+## Optional PKR scenario conversion
+
+The benchmark is calculated in USD. To add a PKR view, supply an explicit
+scenario exchange rate rather than relying on a hard-coded or stale live quote:
+
+```bash
+python -m challenge.c13_cost_sensitive --usd-pkr 280
+```
+
+The report then includes `pkr_scenario`, the exact user-supplied rate, converted
+cost matrix, held-out policy losses and savings. The rate is marked as a user
+assumption, not a live FX quote. The USD calculations remain the source values.

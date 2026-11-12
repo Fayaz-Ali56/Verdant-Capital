@@ -114,6 +114,7 @@ def evaluate(
     n_validation=5000,
     n_test=5000,
     n_estimators=200,
+    usd_pkr=None,
 ):
     _inputs([0, 1], [0.0, 1.0], audit_cost, missed_loss)
     trial = run_trial(
@@ -139,6 +140,21 @@ def evaluate(
         for name, threshold in policies.items()
     }
     savings = results["default"]["total_loss_usd"] - results["optimized"]["total_loss_usd"]
+    if usd_pkr is not None and (not np.isfinite(usd_pkr) or not 1 <= usd_pkr <= 10000):
+        raise ValueError("USD/PKR rate must be finite and between 1 and 10,000")
+    pkr_conversion = None
+    if usd_pkr is not None:
+        pkr_conversion = {
+            "exchange_rate_pkr_per_usd": float(usd_pkr),
+            "assumption_source": "User-supplied scenario rate; not a live FX quote",
+            "cost_matrix_pkr": {k: float(v * usd_pkr) for k, v in {
+                "tn": 0.0, "fp": audit_cost, "fn": missed_loss, "tp": audit_cost
+            }.items()},
+            "test_total_loss_pkr": {
+                name: float(row["total_loss_usd"] * usd_pkr) for name, row in results.items()
+            },
+            "test_savings_vs_default_pkr": float(savings * usd_pkr),
+        }
     return {
         "challenge": "C13 Cost-Sensitive Threshold Optimization",
         "data_type": "synthetic",
@@ -160,6 +176,7 @@ def evaluate(
         "validation_curve": curve,
         "test": results,
         "test_savings_vs_default_usd": float(savings),
+        "pkr_scenario": pkr_conversion,
         "limitations": [
             "Synthetic cases and assumed costs; no demonstrated real-world financial savings or default prediction.",
             "The validation minimum is not a guaranteed test or production minimum; negative test savings are retained.",
@@ -175,9 +192,10 @@ def main():
     parser.add_argument(
         "--missed-loss", type=float, default=10000.0, help="USD per missed positive"
     )
+    parser.add_argument("--usd-pkr", type=float, default=None, help="Optional user-supplied scenario FX rate (PKR per USD); not fetched live")
     args = parser.parse_args()
     try:
-        report = evaluate(args.audit_cost, args.missed_loss)
+        report = evaluate(args.audit_cost, args.missed_loss, usd_pkr=args.usd_pkr)
     except ValueError as error:
         parser.error(str(error))
     dest = Path(config.DATA_DIR) / "c13_report.json"

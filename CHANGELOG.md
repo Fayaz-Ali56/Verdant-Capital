@@ -45,4 +45,4 @@
 
 ### Known limits
 
-- Synthetic benchmark validity, optional provider/RAG validation, shared single-operator storage, pending licensing, framework performance and unavailable browser coverage are explicitly triaged in QA_REPORT.md.
+- Synthetic benchmark validity, optional provider/RAG validation, shared single-operator storage, proprietary licensing and attribution, framework performance and unavailable browser coverage are explicitly triaged in QA_REPORT.md.

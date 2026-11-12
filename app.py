@@ -93,7 +93,8 @@ def sidebar_controls() -> dict:
             mark(
                 '<div class="vc-alertline">Historical data requires a local cache. Missing ESG evidence remains unverified.</div>'
             )
-            choices = config.DEFAULT_CANDIDATES
+            # KRBN is an optional carbon-related ETF proxy, not a carbon-credit spot instrument.
+            choices = list(config.DEFAULT_CANDIDATES) + [config.CARBON_TICKER]
         st.divider()
         capital = st.number_input(
             "Capital to allocate (USD)",
@@ -117,7 +118,7 @@ def sidebar_controls() -> dict:
             "Investment universe",
             choices,
             default=choices,
-            help="Only these assets may receive noncash allocations.",
+            help="Only these assets may receive noncash allocations. KRBN is an optional ETF proxy; its bounded scenario signal applies only when selected.",
         )
         event = "baseline"
         if mode == "demo":

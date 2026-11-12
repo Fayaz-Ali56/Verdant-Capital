@@ -211,3 +211,36 @@ def test_material_hypothetical_market_event_rebalances_a_moderate_portfolio(tmp_
     normal = run_pipeline(dict(universe, event="baseline"), persist=False)
     shock = run_pipeline(dict(universe, event="market_selloff"), persist=False)
     assert normal["optimizer_weights"]["SOLR"] > shock["optimizer_weights"]["SOLR"] + 0.05
+
+
+def test_carbon_proxy_scenario_is_bounded_and_only_affects_selected_proxy():
+    from data.portfolio import optimize
+
+    prices = _prices().rename(columns={"SOLR": "KRBN", "WIND": "WIND"})
+    esg = {
+        "KRBN": {"verdict": "credible", "greenwash_risk": 10, "esg_credibility": 90},
+        "WIND": {"verdict": "credible", "greenwash_risk": 10, "esg_credibility": 90},
+    }
+    baseline = optimize(["KRBN", "WIND"], prices, esg)
+    shocked = optimize(
+        ["KRBN", "WIND"], prices, esg,
+        carbon_market={"outlook": "rising", "change_pct_30d": 40.0},
+    )
+    scenario = shocked["carbon_market_scenario"]
+    assert scenario["annualized_adjustment_pct_points"] == 5.0
+    assert scenario["applied_only_if_proxy_is_selected"] is True
+    assert shocked["allocation_explanations"]["KRBN"]["carbon_proxy_adjustment_annualized_pct_points"] == 5.0
+    assert shocked["allocation_explanations"]["WIND"]["carbon_proxy_adjustment_annualized_pct_points"] == 0.0
+    assert abs(sum(shocked["weights"].values()) - 1.0) < 1e-6
+    assert all(shocked["weights"][t] <= shocked["esg_caps"][t] + 1e-6 for t in ["KRBN", "WIND"])
+    assert "allocation_explanations" in baseline
+
+
+def test_carbon_proxy_signal_does_not_change_unrelated_assets():
+    from data.portfolio import optimize
+
+    prices = _prices()
+    esg = {t: {"verdict": "credible", "greenwash_risk": 10, "esg_credibility": 90} for t in prices}
+    base = optimize(list(prices.columns), prices, esg, carbon_market={"change_pct_30d": 30})
+    assert base["carbon_market_scenario"]["annualized_adjustment_pct_points"] == 0.0
+    assert all(v["carbon_proxy_adjustment_annualized_pct_points"] == 0 for v in base["allocation_explanations"].values())

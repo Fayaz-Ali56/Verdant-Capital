@@ -332,6 +332,8 @@ def run_optimizer(state: GraphState) -> dict:
         state.get("risk_profile", "moderate"),
         strict_esg=state.get("strict_esg", True),
         influence=state.get("agent_influence", {}),
+        carbon_market=state.get("market_snapshot", {}).get("carbon", {}),
+        carbon_ticker=config.CARBON_TICKER,
     )
     return {"optimizer_weights": result["weights"], "portfolio_metrics": result}
 
@@ -405,6 +407,9 @@ def run_synthesis(state: GraphState) -> dict:
                 "historical_market_view": market.get(ticker, {}).get(
                     "market_view", "not_applicable"
                 ),
+                "allocation_explanation": state.get("portfolio_metrics", {}).get(
+                    "allocation_explanations", {}
+                ).get(ticker, {}),
             }
         )
     memo = {
@@ -419,6 +424,7 @@ def run_synthesis(state: GraphState) -> dict:
         "allocation_method": "SciPy optimizer; immutable numeric outputs",
         "expected_esg_score": round(score / denom, 2) if denom > 0 else None,
         "optimizer_metrics": state.get("portfolio_metrics", {}),
+        "carbon_market_scenario": state.get("portfolio_metrics", {}).get("carbon_market_scenario", {}),
         "conflicts": state.get("disagreements", []),
         "evidence_review": state.get("critiques", []),
         "agent_influence": state.get("agent_influence", {}),

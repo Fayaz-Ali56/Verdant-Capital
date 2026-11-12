@@ -87,3 +87,18 @@ def test_risk_lab_recalculates_submitted_costs_and_exposes_test_matrix():
     assert report["cost_matrix_usd"] == dict.fromkeys(("tn", "fp", "fn", "tp"), 0.0)
     assert report["selected_validation"]["flagged"] == 0
     assert report["test"]["optimized"]["total_loss_usd"] == 0
+
+
+def test_optional_pkr_scenario_uses_only_user_supplied_fx_rate():
+    report = evaluate(n_train=1000, n_validation=500, n_test=500, n_estimators=32, usd_pkr=280)
+    pkr = report["pkr_scenario"]
+    assert pkr["exchange_rate_pkr_per_usd"] == 280
+    assert pkr["assumption_source"] == "User-supplied scenario rate; not a live FX quote"
+    assert pkr["test_savings_vs_default_pkr"] == pytest.approx(
+        report["test_savings_vs_default_usd"] * 280
+    )
+
+
+def test_invalid_pkr_scenario_rate_is_rejected():
+    with pytest.raises(ValueError):
+        evaluate(n_train=1000, n_validation=500, n_test=500, n_estimators=32, usd_pkr=0)

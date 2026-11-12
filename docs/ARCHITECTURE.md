@@ -28,7 +28,7 @@ The demonstration uses marked fictional fixtures, not real allegations.
 
 Input: dated adjusted close market prices and KRBN ETF-proxy data. Output:
 market direction based on historical 30-session returns, current data date,
-uncertainty and source. A trend is not a causal carbon impact or forecast.
+uncertainty and source. A trend is not a causal carbon impact or a calibrated forecast. If KRBN is explicitly included as a portfolio candidate, its 30-session proxy change is passed to the optimizer as a bounded, shrunk scenario adjustment for KRBN only; it does not alter other issuers.
 
 ### Portfolio Optimizer
 

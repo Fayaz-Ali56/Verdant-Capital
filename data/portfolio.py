@@ -28,6 +28,8 @@ def optimize(
     strict_esg: bool = True,
     annual_cash_return: float = 0.0,
     influence: dict | None = None,
+    carbon_market: dict | None = None,
+    carbon_ticker: str = "KRBN",
 ) -> dict:
     candidates = list(dict.fromkeys(str(t).upper().strip() for t in candidates if str(t).strip()))
     if "CASH" in candidates:
@@ -46,6 +48,19 @@ def optimize(
     market_influence = float(np.clip(influence.get("market_analyst", 1.0), 0.5, 1.5))
     esg_influence = float(np.clip(influence.get("esg_verifier", 1.0), 0.5, 1.5))
     applied_influence = {"esg_verifier": esg_influence, "market_analyst": market_influence}
+    carbon_market = carbon_market or {}
+    carbon_outlook = carbon_market.get("outlook")
+    carbon_change = carbon_market.get("change_pct_30d")
+    carbon_signal_applied = 0.0
+    if carbon_outlook not in {"rising", "falling", "stable"}:
+        carbon_outlook = "unavailable"
+    if carbon_change is not None:
+        try:
+            carbon_change = float(carbon_change)
+            if not math.isfinite(carbon_change):
+                carbon_change = None
+        except (TypeError, ValueError):
+            carbon_change = None
     prices = prices.copy() if isinstance(prices, pd.DataFrame) else pd.DataFrame()
     if not prices.empty:
         prices.columns = [str(k).upper() for k in prices.columns]
@@ -86,6 +101,15 @@ def optimize(
             "esg_caps": caps,
             "optimizer": "SciPy SLSQP",
             "influence_used": applied_influence,
+            "allocation_explanations": {},
+            "carbon_market_scenario": {
+                "outlook": carbon_outlook,
+                "proxy_change_pct_30d": carbon_change,
+                "proxy_ticker": carbon_ticker.upper(),
+                "annualized_adjustment_pct_points": 0.0,
+                "applied_only_if_proxy_is_selected": True,
+                "method": "No eligible investable position; carbon scenario not applied.",
+            },
         }
 
     hist = prices[assets].apply(pd.to_numeric, errors="coerce").dropna()
@@ -100,6 +124,15 @@ def optimize(
             "esg_caps": caps,
             "optimizer": "SciPy SLSQP",
             "influence_used": applied_influence,
+            "allocation_explanations": {},
+            "carbon_market_scenario": {
+                "outlook": carbon_outlook,
+                "proxy_change_pct_30d": carbon_change,
+                "proxy_ticker": carbon_ticker.upper(),
+                "annualized_adjustment_pct_points": 0.0,
+                "applied_only_if_proxy_is_selected": True,
+                "method": "No eligible investable position; carbon scenario not applied.",
+            },
         }
     # Winsorize runaway estimates, shrink covariance toward diagonal and regularize.
     mu = np.clip(returns.mean().to_numpy() * 252, -0.3, 0.3)
@@ -110,6 +143,12 @@ def optimize(
     # Performance feedback changes a SOFT preference, never a hard ESG exclusion.
     # Separate simulated labels from verified outcomes at the feedback-store boundary.
     mu = mu * market_influence
+    # A carbon-market scenario affects only the explicitly selected KRBN ETF proxy.
+    # The 30-session proxy move is deliberately shrunk and capped; it is a scenario
+    # input, not a spot carbon-credit forecast or a claim about other issuers.
+    if carbon_ticker.upper() in assets and carbon_change is not None:
+        carbon_signal_applied = float(np.clip((carbon_change / 100.0) * 0.25, -0.05, 0.05))
+        mu[assets.index(carbon_ticker.upper())] += carbon_signal_applied
     soft_esg_penalty = np.array(
         [
             (max(0.0, 65.0 - float(esg.get(t, {}).get("esg_credibility") or 0)) / 100.0)
@@ -152,6 +191,24 @@ def optimize(
     weights["CASH"] = max(0.0, 1.0 - sum(weights[t] for t in candidates))
     selection = np.array([weights[t] for t in assets] + [weights["CASH"]])
     variance = max(float(selection @ covariance @ selection), 0.0)
+    allocation_explanations = {}
+    for j, ticker in enumerate(assets):
+        weight = float(weights[ticker])
+        risk_contribution = float(weight * (covariance[:n, :n] @ selection[:n])[j])
+        allocation_explanations[ticker] = {
+            "weight_pct": round(weight * 100, 4),
+            "expected_return_contribution_pct_points": round(float(mu[j] * weight * 100), 4),
+            "marginal_variance_contribution": round(risk_contribution, 8),
+            "esg_position_cap_pct": round(float(caps[ticker]) * 100, 4),
+            "esg_verdict": esg.get(ticker, {}).get("verdict", "unverified"),
+            "esg_credibility": esg.get(ticker, {}).get("esg_credibility"),
+            "carbon_proxy_adjustment_annualized_pct_points": round(
+                carbon_signal_applied * 100 if ticker == carbon_ticker.upper() else 0.0, 4
+            ),
+            "explanation": (
+                "Position is bounded by its ESG eligibility cap; expected return and covariance risk influence the optimizer objective."
+            ),
+        }
     return {
         "weights": weights,
         "status": "optimized" if "Long-only" in note else "cash_only",
@@ -162,4 +219,13 @@ def optimize(
         "esg_caps": caps,
         "optimizer": "SciPy SLSQP",
         "influence_used": applied_influence,
+        "allocation_explanations": allocation_explanations,
+        "carbon_market_scenario": {
+            "outlook": carbon_outlook,
+            "proxy_change_pct_30d": carbon_change,
+            "proxy_ticker": carbon_ticker.upper(),
+            "annualized_adjustment_pct_points": round(carbon_signal_applied * 100, 4),
+            "applied_only_if_proxy_is_selected": True,
+            "method": "25% shrinkage of 30-session KRBN proxy change, capped at +/-5 percentage points annualized; illustrative scenario only",
+        },
     }
