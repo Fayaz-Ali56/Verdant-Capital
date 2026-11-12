@@ -313,17 +313,13 @@ QA_REPORT.md marks them unrun.
 - Authenticated multi-user operation, tenant-scoped storage and retention policy.
 - Verified future outcomes before automated feedback adaptation.
 - Frontend delivery improvements beyond the current Streamlit framework limits.
-<<<<<<< HEAD
 
-## Ownership, licensing and attribution
+## Ownership, Licensing and Attribution
 
-Verdant Capital was developed as a hackathon project by **Team Cypher**. The
-repository is maintained by [Fayaz Ali](https://github.com/Fayaz-Ali56). The
-project uses a **Proprietary — All Rights Reserved** notice: public visibility
-does not grant permission to copy, modify, redistribute, sublicense, or
-commercially use the original project materials. Individual contributors retain
-whatever rights they hold in their contributions unless a separate written
-agreement provides otherwise. Third-party components remain under their own
-licenses. Read [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md) before reuse.
-=======
->>>>>>> 432be253251041a794138171557fbdf17fe95f4a
+Verdant Capital was developed as a hackathon project by **Team Cypher** and is maintained by **Fayaz Ali**.
+
+**Copyright © 2026 Team Cypher. All Rights Reserved.**
+
+This project is proprietary. No permission is granted to copy, modify, distribute, sublicense, or commercially use the original project materials without prior written authorization from the relevant rights holders.
+
+Third-party components remain subject to their respective licenses. Please refer to [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md) for further details.
