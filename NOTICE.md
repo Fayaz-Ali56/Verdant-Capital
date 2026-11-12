@@ -12,8 +12,8 @@ incorporated legal entity.
 
 The original project materials identify Team Cypher and reference:
 
-- Submission repository: https://github.com/syedazoh/verdant_capital-
-- Related project repository: https://github.com/Fayaz-Ali56/Verdant-Capital/tree/zohtest
+- Submission repository: https://github.com/Fayaz-Ali56/Verdant-Capital
+- Related project repository: https://github.com/syedazoh/verdant_capital-
 
 These references are retained for attribution and project history. A repository
 link or attribution is not, by itself, proof of a copyright assignment or a
